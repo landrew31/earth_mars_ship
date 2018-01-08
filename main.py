@@ -1,18 +1,12 @@
-from tkinter import Tk, Canvas
+from tkinter import Tk
 
-# from earth_mars import init_start_positions
-from earth_mars_ship import init_start_positions
-
-
-CANVAS_WIDTH = 1600
-CANVAS_HEIGHT = 1000
+from earth_mars_ship_diff import Gui
 
 
 def run():
     root = Tk()
-    canvas = Canvas(root, width=CANVAS_WIDTH, height=CANVAS_HEIGHT)
-    canvas.pack()
-    init_start_positions(root, canvas)
+    root.config(background="#FFFFFF")
+    app = Gui(root)
     root.mainloop()
 
 
