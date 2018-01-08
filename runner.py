@@ -51,8 +51,27 @@ def get_get_new_positions(sun, planets, delta_t, objects_with_custom_acceleratio
 
 def get_functions(sun, planets, objects_with_custom_accelerations):
     functions = []
+    num_of_moving = len(planets) + len(objects_with_custom_accelerations)
     for i, body in enumerate(chain(planets, objects_with_custom_accelerations)):
+
+        def get_acceleration_for_body(y_x, y_y):
+            a = [
+                (
+                    b.get_acceleration_pair(math.sqrt((y_x - b.x) ** 2 + (y_y - b.y) ** 2)),
+                    i_b,
+                ) for i_b, b in enumerate(chain(planets, objects_with_custom_accelerations, [sun]))
+                ]
+            ad = list(filter(lambda t: t[0] and t[0][0] and t[0][1], a))
+            a_pairs = sorted(ad, key=lambda t: t[0][0])
+            print(a_pairs)
+            if a_pairs:
+                (d, a), central_body_index = a_pairs[0]
+                return a, central_body_index
+            return 0, 0
+
         def get_current_object_equations(i=i, body=body):
+            a, accelerate_to = get_acceleration_for_body(body.x, body.y) if body in objects_with_custom_accelerations else (0, 0)
+            print(a, accelerate_to, body in objects_with_custom_accelerations)
             return [
                 lambda *y: y[i * 4 + 1],
                 lambda *y: reduce(lambda acc, v: acc + v, chain(
@@ -60,11 +79,17 @@ def get_functions(sun, planets, objects_with_custom_accelerations):
                         -get_g_x(sun.mass, y[i * 4], y[i * 4 + 2]),
                     ],
                     [
-                        -get_g_x(body.mass, y[i * 4] - y[i_b * 4], y[i * 4 + 2] - y[i_b * 4 + 2])
+                        -get_g_x(body.mass, y[i * 4] - y[i_b * 4], y[i * 4 + 2] - y[i_b * 4 + 2]) if b != body else 0
                         for i_b, b in enumerate(chain(planets, objects_with_custom_accelerations))
-                        if b != body
                     ],
-                    [-get_a_x(A, y[i * 4], y[i * 4 + 2])] if body in objects_with_custom_accelerations else [],
+                    (
+                        [-get_a_x(
+                            a,
+                            y[i * 4] - (y[accelerate_to * 4] if accelerate_to < num_of_moving else 0),
+                            y[i * 4 + 2] - (y[accelerate_to * 4 + 2] if accelerate_to < num_of_moving else 0)
+                        )]
+                        if body in objects_with_custom_accelerations and a else []
+                    ),
                 ), 0),
                 lambda *y: y[i * 4 + 3],
                 lambda *y: reduce(lambda acc, v: acc + v, chain(
@@ -72,8 +97,15 @@ def get_functions(sun, planets, objects_with_custom_accelerations):
                     [
                         -get_g_y(body.mass, y[i * 4] - y[i_b * 4], y[i * 4 + 2] - y[i_b * 4 + 2]) if b != body else 0
                         for i_b, b in enumerate(chain(planets, objects_with_custom_accelerations))
-                        ],
-                    [-get_a_y(A, y[i * 4], y[i * 4 + 2])] if body in objects_with_custom_accelerations else [],
+                    ],
+                    (
+                        [-get_a_y(
+                            a,
+                            y[i * 4] - (y[accelerate_to * 4] if accelerate_to < num_of_moving else 0),
+                            y[i * 4 + 2] - (y[accelerate_to * 4 + 2] if accelerate_to < num_of_moving else 0)
+                        )]
+                        if body in objects_with_custom_accelerations and a else []
+                    ),
                 ), 0),
             ]
 

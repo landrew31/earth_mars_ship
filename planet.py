@@ -25,7 +25,7 @@ def turn_dot_on_angle(x, y, turn_over_angle):
 
 class Planet:
     def __init__(
-        self, canvas, scale,
+        self, name, canvas, scale,
         large_half_life=0,
         planet_r=0,
         orbit_center=(0, 0),
@@ -35,11 +35,14 @@ class Planet:
         lambda_offset=0,
         perihelion_longitude=0,
         mass=None,
+        a_config=(),
     ):
+        self.name = name
         self.canvas = canvas
         self.scale = scale
         self.color = color
         self.mass = mass
+        self.a_config = list(sorted(a_config, key=lambda t: t[0]))
 
         self.large_half_life = large_half_life
         self.orbit_eccentricity = eccentricity
@@ -74,6 +77,13 @@ class Planet:
             scale * self.rel_x + planet_r, scale * self.rel_y + planet_r,
             fill=color,
         )
+
+    def get_acceleration_pair(self, distance):
+        print(self.name, distance, self.a_config)
+        for d, a in self.a_config:
+            # print(d, a, distance)
+            if d >= distance:
+                return d, a
 
     def __get_current_angular_velocity(self):
         return self.perihelion_velocity * self.perihelion_radius / (self.orbit_r ** 2) if self.orbit_r else 0
