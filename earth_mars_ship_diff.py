@@ -6,7 +6,14 @@ from itertools import chain
 from planet import Planet
 from runner import get_get_new_positions
 
-from tkinter import Canvas, ALL, DISABLED, NORMAL, Button, W, N, E, S, TOP, BOTTOM, BooleanVar
+from tkinter import (
+    Canvas, Button, Entry, Label, LabelFrame,
+    BooleanVar, DoubleVar,
+    W, N, E, S,
+    ALL, DISABLED, NORMAL,
+    TOP, BOTTOM, LEFT, RIGHT,
+    INSERT,
+)
 
 from tkinter.ttk import Frame, Checkbutton
 
@@ -15,8 +22,14 @@ DELTA_T = 100000
 ANIMATION_T = 10
 
 
-def get_planet_configs(canvas_width, canvas_height):
-    canvas_orbit_radius = min(canvas_height, canvas_width) / 2 - 40
+def get_planet_configs(
+    canvas_width,
+    canvas_height,
+    earth_true_anomaly,
+    mars_true_anomaly,
+    ship_true_anomaly,
+):
+    canvas_orbit_radius = min(canvas_height, canvas_width) / 2 - 30
     start_of_coordinates = (canvas_width / 2, canvas_height / 2)
 
     sun_config = dict(
@@ -37,7 +50,7 @@ def get_planet_configs(canvas_width, canvas_height):
         eccentricity=0.0167,
         color='blue',
         lambda_initial=0,
-        lambda_offset=259,
+        lambda_offset=earth_true_anomaly,
         perihelion_longitude=336,
         mass=5.972 * math.pow(10, 24),
     )
@@ -49,7 +62,7 @@ def get_planet_configs(canvas_width, canvas_height):
         eccentricity=0.0934,
         color='red',
         lambda_initial=0,
-        lambda_offset=244,
+        lambda_offset=mars_true_anomaly,
         perihelion_longitude=101,
         mass=6.39 * math.pow(10, 23),
     )
@@ -57,16 +70,22 @@ def get_planet_configs(canvas_width, canvas_height):
     ship_config = deepcopy(earth_config)
     ship_config.update(dict(
         color='green',
-        lambda_offset=260,
+        lambda_offset=ship_true_anomaly,
         planet_r=5,
         mass=10000,
     ))
+
+    scale = canvas_orbit_radius / max(
+        earth_config['large_half_life'] * (1 + earth_config['eccentricity']),
+        mars_config['large_half_life'] * (1 + mars_config['eccentricity']),
+    )
     return dict(
         earth_config=earth_config,
         sun_config=sun_config,
         mars_config=mars_config,
         ship_config=ship_config,
         canvas_orbit_radius=canvas_orbit_radius,
+        scale=scale,
     )
 
 
@@ -87,15 +106,42 @@ class Panel(Frame):
         self.canvas = canvas
         self.pack_propagate(0)
         self.with_ship = BooleanVar(self, value=True)
+
         self.runner = None
-        self.planets = ()
-        self.objects_with_custom_accelerations = ()
-        self.sun = None
+        self.planets = self.objects_with_custom_accelerations = ()
+        self.earth = self.mars = self.ship = self.sun = None
         self.init_ui()
 
     def init_ui(self):
         exit_button = Button(self, text='Quit', command=self.quit, bg='#ffaaaa')
         exit_button.pack(side=BOTTOM)
+
+        group = LabelFrame(self, text='True Anomaly settings')
+        group.pack(side=TOP)
+
+        fr1 = Frame(group)
+        fr1.pack(side=TOP)
+        self.earth_true_anomaly_label = Label(fr1, text='Earth True Anomaly')
+        self.earth_true_anomaly_label.pack(side=LEFT)
+        self.earth_true_anomaly_widget = Entry(fr1)
+        self.earth_true_anomaly_widget.pack(side=RIGHT)
+        self.earth_true_anomaly_widget.insert(INSERT, 259)
+
+        fr2 = Frame(group)
+        fr2.pack(side=TOP)
+        self.mars_true_anomaly_label = Label(fr2, text='Mars True Anomaly')
+        self.mars_true_anomaly_label.pack(side=LEFT)
+        self.mars_true_anomaly_widget = Entry(fr2)
+        self.mars_true_anomaly_widget.pack(side=RIGHT)
+        self.mars_true_anomaly_widget.insert(INSERT, 260)
+
+        fr3 = Frame(group)
+        fr3.pack(side=TOP)
+        self.ship_true_anomaly_label = Label(fr3, text='Earth True Anomaly')
+        self.ship_true_anomaly_label.pack(side=LEFT)
+        self.ship_true_anomaly_widget = Entry(fr3)
+        self.ship_true_anomaly_widget.pack(side=RIGHT)
+        self.ship_true_anomaly_widget.insert(INSERT, 244)
 
         with_ship_button = Checkbutton(
             self, text='With Ship',
@@ -117,22 +163,28 @@ class Panel(Frame):
         self.set_resume_button_state()
         self.resume_button.pack(side=TOP)
 
+
     def init_start_positions(self):
         self.canvas.delete(ALL)
         if self.runner is not None:
             self.master.after_cancel(self.runner)
-        configs = get_planet_configs(int(self.canvas['width']), int(self.canvas['height']))
-        scale = configs['canvas_orbit_radius'] / max(
-            configs['earth_config']['large_half_life'],
-            configs['mars_config']['large_half_life'],
+
+        configs = get_planet_configs(
+            int(self.canvas['width']),
+            int(self.canvas['height']),
+            earth_true_anomaly=float(self.earth_true_anomaly_widget.get()),
+            mars_true_anomaly=float(self.mars_true_anomaly_widget.get()),
+            ship_true_anomaly=float(self.ship_true_anomaly_widget.get()),
         )
-        self.planets = (
-            Planet(self.canvas, scale, **configs['earth_config']),
-            Planet(self.canvas, scale, **configs['mars_config']),
-        )
-        self.objects_with_custom_accelerations = (
-            (Planet(self.canvas, scale, **configs['ship_config']),) if self.with_ship.get() else ()
-        )
+        scale = configs['scale']
+
+        self.earth = Planet(self.canvas, scale, **configs['earth_config'])
+        self.mars = Planet(self.canvas, scale, **configs['mars_config'])
+        self.ship = Planet(self.canvas, scale, **configs['ship_config'])
+
+        self.planets = (self.earth, self.mars)
+        self.objects_with_custom_accelerations = (self.ship,) if self.with_ship.get() else ()
+
         self.sun = Planet(self.canvas, scale, **configs['sun_config'])
         self.resume_running()
 
