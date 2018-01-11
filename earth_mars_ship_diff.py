@@ -126,11 +126,11 @@ class Panel(Frame):
         exit_button = Button(self, text='Quit', command=self.quit, bg='#ffaaaa')
         exit_button.pack(side=BOTTOM)
 
-        self.message_box = Frame(self, width=200)
-        self.message_box.pack(side=BOTTOM, fill=BOTH)
-        self.message = Text(self.message_box)
-        self.message.pack()
-        self.message.insert(END, 'Hu kasdffds lsfdk;l sfdkl;ksf; i')
+        # self.message_box = Frame(self, width=200)
+        # self.message_box.pack(side=BOTTOM, fill=BOTH)
+        # self.message = Text(self.message_box)
+        # self.message.pack()
+        # self.message.insert(END, 'Hu kasdffds lsfdk;l sfdkl;ksf; i')
 
         self.setup_true_anomaly_setting_fields()
 
