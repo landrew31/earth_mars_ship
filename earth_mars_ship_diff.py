@@ -1,5 +1,7 @@
 import math
 
+import os.path
+
 from copy import deepcopy
 from itertools import chain
 
@@ -120,6 +122,7 @@ class Panel(Frame):
         self.acceleration_settings_near_earth = []
         self.acceleration_settings_near_mars = []
         self.acceleration_settings_near_sun = []
+        self.file_to_write = None
         self.init_ui()
 
     def init_ui(self):
@@ -335,6 +338,18 @@ class Panel(Frame):
         self.objects_with_custom_accelerations = (self.ship,) if self.with_ship.get() else ()
 
         self.sun = Planet('Sun', self.canvas, scale, **configs['sun_config'])
+
+        file_name_prefix = 'log_file'
+        files_count = len([name for name in os.listdir('.') if os.path.isfile(name) and file_name_prefix in name])
+        file_name = 'log_file%s.txt' % (' (%s)' % files_count if files_count else '')
+        if self.file_to_write:
+            self.file_to_write.close()
+        self.file_to_write = open(file_name, 'w')
+        self.file_to_write.write(
+            'Time\tVelocity Ship-Sun\tDistance Ship-Sun\tVelocity Ship-Earth\t'
+            'Distance Ship-Earth\tVelocity Ship-Mars\tDistance Ship-Mars\n'
+        )
+        self.time = 0
         self.resume_running()
 
     def run_system(self, sun, planets, objects_with_custom_accelerations):
@@ -350,6 +365,20 @@ class Panel(Frame):
             p.left_trace_dot()
             p.set_coordinates_and_velocity(x, v_x, y, v_y)
 
+        self.time += DELTA_T
+        ship, = objects_with_custom_accelerations
+        to_file_data = '%s\t%s\t%s\t' % (self.time, math.sqrt(ship.v_x ** 2 + ship.v_y ** 2), math.sqrt(ship.x ** 2 + ship.y ** 2))
+        for p in planets:
+            rel_v_x = ship.v_x - p.v_x
+            rel_v_y = ship.v_y - p.v_y
+            rel_x = ship.x + p.x
+            rel_y = ship.y + p.y
+            to_file_data += '%s\t%s\t' % (
+                math.sqrt(rel_v_x ** 2 + rel_v_y ** 2),
+                math.sqrt(rel_x ** 2 + rel_y ** 2),
+            )
+        to_file_data += '\n'
+        self.file_to_write.write(to_file_data)
         self.runner = self.master.after(
             ANIMATION_T,
             lambda: self.run_system(sun, planets, objects_with_custom_accelerations),
