@@ -63,7 +63,6 @@ def get_functions(sun, planets, objects_with_custom_accelerations):
                 ]
             ad = list(filter(lambda t: t[0] and t[0][0] and t[0][1], a))
             a_pairs = sorted(ad, key=lambda t: t[0][0])
-            print(a_pairs)
             if a_pairs:
                 (d, a), central_body_index = a_pairs[0]
                 return a, central_body_index
@@ -71,7 +70,6 @@ def get_functions(sun, planets, objects_with_custom_accelerations):
 
         def get_current_object_equations(i=i, body=body):
             a, accelerate_to = get_acceleration_for_body(body.x, body.y) if body in objects_with_custom_accelerations else (0, 0)
-            print(a, accelerate_to, body in objects_with_custom_accelerations)
             return [
                 lambda *y: y[i * 4 + 1],
                 lambda *y: reduce(lambda acc, v: acc + v, chain(

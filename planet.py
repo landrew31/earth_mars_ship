@@ -31,7 +31,6 @@ class Planet:
         orbit_center=(0, 0),
         eccentricity=0,
         color='red',
-        lambda_initial=0,
         lambda_offset=0,
         perihelion_longitude=0,
         mass=None,
@@ -49,6 +48,7 @@ class Planet:
 
         self.perihelion_longitude = to_radian(perihelion_longitude)
         self._equinox_dot_initial_angle = math.pi / 2
+        self.init_lambda = self.perihelion_longitude + self._equinox_dot_initial_angle
 
         self.planet_r = planet_r
 
@@ -60,17 +60,19 @@ class Planet:
 
         self._lambda = 0
 
-        self.orbit_r = self.__get_current_orbit_radius()
+        s = self.orbit_r = self.__get_current_orbit_radius()
+
         self.current_velocity = self.__get_current_velocity()
+        self.x, self.y = self.__get_next_coordinates()
 
-        x, y = self.__get_next_coordinates()
-        self.x = x
-        self.y = y
+        self.__fit_velocity_and_position(to_radian(lambda_offset))
 
-        rel_x, rel_y = self.get_relative_coordinates(x, y)
+        self.x, self.y = self.turn_orbit_to_appropriate_perihelion_longitude(self.x, self.y)
+        self.v_x, self.v_y = self.turn_orbit_to_appropriate_perihelion_longitude(self.v_x, self.v_y)
+        a = self.orbit_r = math.sqrt(self.x ** 2 + self.y ** 2)
+
+        rel_x, rel_y = self.get_relative_coordinates(self.x, self.y)
         self.rel_x, self.rel_y = rel_x, rel_y
-
-        self.__fit_velocity_and_position(to_radian(lambda_initial + lambda_offset))
 
         self.item = canvas.create_oval(
             scale * self.rel_x - planet_r, scale * self.rel_y - planet_r,
@@ -79,9 +81,7 @@ class Planet:
         )
 
     def get_acceleration_pair(self, distance):
-        print(self.name, distance, self.a_config)
         for d, a in self.a_config:
-            # print(d, a, distance)
             if d >= distance:
                 return d, a
 
@@ -103,7 +103,6 @@ class Planet:
         )
 
     def get_relative_coordinates(self, x, y):
-        x, y = self.turn_orbit_to_appropriate_perihelion_longitude(x, y)
         rel_x = self.orbit_x / self.scale + x
         rel_y = self.orbit_y / self.scale + y
         return rel_x, rel_y
@@ -152,4 +151,5 @@ class Planet:
         mock_sun = SunPseudo(0, 0, SUN_MASS)
         while self._lambda < _lambda:
             self.x, self.y, self.v_x, self.v_y = get_new_position_around_sun(self, mock_sun, delta_t_to_fit)
+            self.orbit_r = math.sqrt(self.x ** 2 + self.y ** 2)
             self._lambda += self.__get_current_angular_velocity() * delta_t_to_fit
