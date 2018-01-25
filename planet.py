@@ -35,6 +35,7 @@ class Planet:
         perihelion_longitude=0,
         mass=None,
         a_config=(),
+        start_velocity=None,
     ):
         self.name = name
         self.canvas = canvas
@@ -68,6 +69,9 @@ class Planet:
         self.__fit_velocity_and_position(to_radian(lambda_offset))
 
         self.x, self.y = self.turn_orbit_to_appropriate_perihelion_longitude(self.x, self.y)
+        if start_velocity:
+            self.v_x = start_velocity * math.cos(self._lambda)
+            self.v_y = start_velocity * math.sin(self._lambda)
         self.v_x, self.v_y = self.turn_orbit_to_appropriate_perihelion_longitude(self.v_x, self.v_y)
         a = self.orbit_r = math.sqrt(self.x ** 2 + self.y ** 2)
 

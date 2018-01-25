@@ -21,6 +21,7 @@ from tkinter.ttk import Frame, Checkbutton
 
 
 DELTA_T = 100000
+START_VELOCITY = 30000
 ANIMATION_T = 10
 RESULT_DIRECTORY = 'results'
 FILE_NAME_PREFIX = 'log_file'
@@ -29,6 +30,7 @@ FILE_NAME_PREFIX = 'log_file'
 def get_planet_configs(
     canvas_width,
     canvas_height,
+    ship_start_velocity,
     earth_true_anomaly,
     mars_true_anomaly,
     ship_true_anomaly,
@@ -81,6 +83,7 @@ def get_planet_configs(
         planet_r=2,
         mass=10000,
         a_config=(),
+        start_velocity=ship_start_velocity,
     ))
 
     scale = canvas_orbit_radius / max(
@@ -118,6 +121,7 @@ class Panel(Frame):
         self.pack_propagate(0)
         self.with_ship = BooleanVar(self, value=True)
         self.delta_t = DoubleVar(self, value=DELTA_T)
+        self.start_velocity = DoubleVar(self, value=START_VELOCITY)
 
         self.runner = None
         self.planets = self.objects_with_custom_accelerations = ()
@@ -139,6 +143,13 @@ class Panel(Frame):
         self.delta_t_label.pack(side=LEFT)
         self.delta_t_widget = Entry(fr, textvariable=self.delta_t)
         self.delta_t_widget.pack(side=RIGHT)
+
+        fr = Frame(self)
+        fr.pack(side=TOP)
+        self.start_velocity_label = Label(fr, text='Start ship velocity')
+        self.start_velocity_label.pack(side=LEFT)
+        self.start_velocity_widget = Entry(fr, textvariable=self.start_velocity)
+        self.start_velocity_widget.pack(side=RIGHT)
 
         write_logs_to_file_button = Checkbutton(
             self, text='Write logs to file',
@@ -334,6 +345,7 @@ class Panel(Frame):
         configs = get_planet_configs(
             int(self.canvas['width']),
             int(self.canvas['height']),
+            -self.start_velocity.get(),
             earth_true_anomaly=float(self.earth_true_anomaly_widget.get()),
             mars_true_anomaly=float(self.mars_true_anomaly_widget.get()),
             ship_true_anomaly=float(self.ship_true_anomaly_widget.get()),
