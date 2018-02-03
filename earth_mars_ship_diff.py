@@ -342,10 +342,15 @@ class Panel(Frame):
         if self.runner is not None:
             self.master.after_cancel(self.runner)
 
+        try:
+            velocity = self.start_velocity.get()
+        except:
+            velocity = None
+
         configs = get_planet_configs(
             int(self.canvas['width']),
             int(self.canvas['height']),
-            -self.start_velocity.get(),
+            velocity,
             earth_true_anomaly=float(self.earth_true_anomaly_widget.get()),
             mars_true_anomaly=float(self.mars_true_anomaly_widget.get()),
             ship_true_anomaly=float(self.ship_true_anomaly_widget.get()),
@@ -382,7 +387,8 @@ class Panel(Frame):
                 self.file_to_write.close()
             self.file_to_write = open(file_name, 'w')
             self.file_to_write.write(
-                'Time\tVelocity Ship-Sun\tDistance Ship-Sun\tVelocity Ship-Earth\t'
+                'Time\tVelocity Ship-Sun\tVelocity Ship-Sun X\tVelocity Ship-Sun Y\t'
+                'Distance Ship-Sun\tVelocity Ship-Earth\t'
                 'Distance Ship-Earth\tVelocity Ship-Mars\tDistance Ship-Mars\n'
             )
         self.time = 0
@@ -403,7 +409,10 @@ class Panel(Frame):
         self.time += self.delta_t.get()
         if objects_with_custom_accelerations and self.write_logs_to_file.get():
             ship, = objects_with_custom_accelerations
-            to_file_data = '%s\t%s\t%s\t' % (self.time, math.sqrt(ship.v_x ** 2 + ship.v_y ** 2), math.sqrt(ship.x ** 2 + ship.y ** 2))
+            to_file_data = '%s\t%s\t%s\t%s\t%s\t' % (
+                self.time, math.sqrt(ship.v_x ** 2 + ship.v_y ** 2),
+                ship.v_x, ship.v_y, math.sqrt(ship.x ** 2 + ship.y ** 2),
+            )
             for p in planets:
                 rel_v_x = ship.v_x - p.v_x
                 rel_v_y = ship.v_y - p.v_y

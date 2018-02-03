@@ -1,4 +1,6 @@
 import math
+import numpy as np
+
 from collections import namedtuple
 from runner import get_new_position_around_sun
 
@@ -70,8 +72,10 @@ class Planet:
 
         self.x, self.y = self.turn_orbit_to_appropriate_perihelion_longitude(self.x, self.y)
         if start_velocity:
-            self.v_x = start_velocity * math.cos(self._lambda)
-            self.v_y = start_velocity * math.sin(self._lambda)
+            new_v_x = start_velocity * math.cos(self._lambda)
+            self.v_x = -new_v_x if np.sign(self.v_x) != np.sign(new_v_x) else new_v_x
+            new_v_y = start_velocity * math.sin(self._lambda)
+            self.v_y = -new_v_y if np.sign(self.v_y) != np.sign(new_v_y) else new_v_y
         self.v_x, self.v_y = self.turn_orbit_to_appropriate_perihelion_longitude(self.v_x, self.v_y)
         a = self.orbit_r = math.sqrt(self.x ** 2 + self.y ** 2)
 
